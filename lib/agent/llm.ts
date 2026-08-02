@@ -59,6 +59,52 @@ export async function callLlm(messages: LlmMessage[]): Promise<Record<string, un
   return extractJson(text);
 }
 
+export async function createEmbeddings(input: string | string[]): Promise<number[][]> {
+  const values = Array.isArray(input) ? input : [input];
+  const apiKey = process.env.LLMOD_API_KEY;
+  if (!apiKey) return values.map(mockEmbedding);
+
+  const configured = process.env.LLMOD_EMBEDDINGS_URL;
+  const baseUrl = normalizeLlmBaseUrl(process.env.LLMOD_BASE_URL || "https://api.llmod.ai");
+  const response = await fetch(configured || `${baseUrl}/embeddings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      ...(process.env.LLMOD_API_KEY_HEADER
+        ? { [process.env.LLMOD_API_KEY_HEADER]: apiKey }
+        : {}),
+    },
+    body: JSON.stringify({
+      model: process.env.LLMOD_EMBEDDING_MODEL || "MB5R2CF-azure/text-embedding-3-small",
+      input: values,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`LLMod embeddings request failed (${response.status}): ${detail.slice(0, 300)}`);
+  }
+  const payload = (await response.json()) as {
+    data?: Array<{ index?: number; embedding?: number[] }>;
+  };
+  const ordered = [...(payload.data || [])].sort((a, b) => (a.index || 0) - (b.index || 0));
+  if (ordered.length !== values.length || ordered.some((item) => !Array.isArray(item.embedding))) {
+    throw new Error("LLMod returned an invalid embeddings response.");
+  }
+  return ordered.map((item) => item.embedding!);
+}
+
+function mockEmbedding(value: string): number[] {
+  const vector = Array.from({ length: 64 }, () => 0);
+  for (let index = 0; index < value.length; index += 1) {
+    vector[index % vector.length] += (value.charCodeAt(index) % 97) / 97;
+  }
+  const magnitude = Math.sqrt(vector.reduce((sum, item) => sum + item * item, 0)) || 1;
+  return vector.map((item) => item / magnitude);
+}
+
 function mockLlm(messages: LlmMessage[]): Record<string, unknown> {
   const system = messages[0]?.content || "";
   const user = messages.at(-1)?.content || "";
