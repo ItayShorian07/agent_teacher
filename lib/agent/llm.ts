@@ -1,5 +1,12 @@
 type LlmMessage = { role: "system" | "user" | "assistant"; content: string };
 
+function normalizeLlmBaseUrl(rawUrl: string): string {
+  const url = new URL(rawUrl);
+  const path = url.pathname.replace(/\/+$/, "");
+  url.pathname = path && path !== "/" ? path : "/v1";
+  return url.toString().replace(/\/$/, "");
+}
+
 function extractJson(text: string): Record<string, unknown> {
   const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
@@ -17,7 +24,7 @@ export async function callLlm(messages: LlmMessage[]): Promise<Record<string, un
   if (!apiKey) return mockLlm(messages);
 
   const configured = process.env.LLMOD_CHAT_COMPLETIONS_URL;
-  const baseUrl = (process.env.LLMOD_BASE_URL || "https://api.llmod.ai/v1").replace(/\/$/, "");
+  const baseUrl = normalizeLlmBaseUrl(process.env.LLMOD_BASE_URL || "https://api.llmod.ai");
   const url = configured || `${baseUrl}/chat/completions`;
   const response = await fetch(url, {
     method: "POST",

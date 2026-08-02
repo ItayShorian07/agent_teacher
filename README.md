@@ -80,11 +80,11 @@ Add the group key to `.env.local`:
 
 ```env
 LLMOD_API_KEY=your_group_key
-LLMOD_BASE_URL=https://api.llmod.ai/v1
+LLMOD_BASE_URL=https://api.llmod.ai
 LLMOD_MODEL=MB5R2CF-azure/gpt-5.4-mini
 ```
 
-If the course dashboard provides a complete chat-completions URL, configure `LLMOD_CHAT_COMPLETIONS_URL` instead. Never commit `.env.local`.
+The client automatically resolves that base URL to `/v1/chat/completions`. If the course dashboard provides a different complete chat-completions URL, configure `LLMOD_CHAT_COMPLETIONS_URL` instead. Never commit `.env.local`.
 
 Before submission, also replace the team placeholders:
 
