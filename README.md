@@ -13,7 +13,7 @@ Implemented:
 - temporary one-hour in-memory learning state;
 - hard limit of 16 total LLM calls per session;
 - LLMod chat and embedding clients;
-- deterministic, non-billable demo mode;
+- deterministic, non-billable local demo mode;
 - all four course-required endpoints and the optional reset endpoint;
 - Python 3.12 test suite; and
 - a Vercel-compatible FastAPI entrypoint.
@@ -85,7 +85,7 @@ ITAY_EMAIL=
 BOAZ_EMAIL=
 ```
 
-If `LLMOD_API_KEY` is missing, the application automatically uses deterministic demo responses. Tests explicitly enable demo mode so they never consume the course budget.
+If `LLMOD_API_KEY` is missing during local development, the application uses deterministic demo responses. Tests explicitly enable demo mode so they never consume the course budget. Production fails closed when the key is missing, preventing an incorrectly configured deployment from silently serving mock lessons.
 
 ## Local development
 
@@ -171,6 +171,6 @@ To deploy later:
 3. deploy `main`; and
 4. verify the root interface and all required endpoints.
 
-Temporary module memory is best effort on serverless infrastructure. Supabase and Pinecone must hold any state that needs to survive instance recycling or scaling.
+Temporary module memory is best effort on serverless infrastructure. Supabase and Pinecone must hold any state that needs to survive instance recycling or scaling. Before exposing the shared course key publicly, add a durable project-wide usage limit or rate limiter; a per-session limit alone can be renewed by starting a new session.
 
 For design decisions, data-flow details, constraints, and the remaining RAG plan, see [the technical documentation](docs/PROJECT_DOCUMENTATION.md).

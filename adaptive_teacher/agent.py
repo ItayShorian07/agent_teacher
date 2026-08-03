@@ -58,6 +58,12 @@ def _update_state(state: LearningState, action: ToolName, result: dict[str, Any]
     state.topics = _unique(state.topics + _string_array(result.get("topics")))
     state.weak_topics = _unique(state.weak_topics + _string_array(result.get("weak_topics")))
     state.strong_topics = _unique(state.strong_topics + _string_array(result.get("strong_topics")))
+    score = result.get("score")
+    if isinstance(score, int | float) and not isinstance(score, bool):
+        state.latest_score = min(100.0, max(0.0, float(score)))
+    mastery = result.get("mastery")
+    if isinstance(mastery, bool):
+        state.mastery = mastery
     state.last_action = action
 
 
@@ -81,13 +87,15 @@ async def execute_agent(state: LearningState, message: str) -> tuple[str, list[d
     supervisor_system, supervisor_user = supervisor_prompt(
         state, message, max(0, calls_after_supervisor)
     )
+    # Reserve each call before dispatch. Even a timeout or invalid provider
+    # response consumed an attempted request from the assignment budget.
+    state.llm_calls += 1
     supervisor_raw = await call_llm(
         [
             {"role": "system", "content": supervisor_system},
             {"role": "user", "content": supervisor_user},
         ]
     )
-    state.llm_calls += 1
     decision = _validate_decision(supervisor_raw)
     steps.append(
         TraceStep(
@@ -109,13 +117,13 @@ async def execute_agent(state: LearningState, message: str) -> tuple[str, list[d
             tool_system, tool_user = tool_prompt(
                 decision.action, state, message, decision.tool_instruction
             )
+            state.llm_calls += 1
             tool_result = await call_llm(
                 [
                     {"role": "system", "content": tool_system},
                     {"role": "user", "content": tool_user},
                 ]
             )
-            state.llm_calls += 1
             steps.append(
                 TraceStep(
                     module=decision.action,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
@@ -17,6 +18,7 @@ from adaptive_teacher.state import session_store
 
 ROOT = Path(__file__).resolve().parent
 PUBLIC = ROOT / "public"
+LOGGER = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Adaptive AI Teacher",
@@ -108,12 +110,33 @@ async def execute(request: Request) -> JSONResponse:
         return _error_response("The prompt is limited to 30,000 characters.")
 
     session_id, reused_cookie = _session_id(request.cookies.get("adaptive_session_id"))
-    state = session_store.get(session_id)
-    try:
-        response_text, steps = await execute_agent(state, prompt.strip())
-        session_store.save(state)
-    except Exception as error:
-        return _error_response(str(error) or "Unexpected agent error.", 500)
+    async with session_store.execution(session_id):
+        state = session_store.get(session_id)
+        try:
+            response_text, steps = await execute_agent(state, prompt.strip())
+            session_store.save(state)
+        except Exception:
+            # Persist any reserved call count, but never expose provider details.
+            session_store.save(state)
+            LOGGER.exception("Agent execution failed for session %s", session_id)
+            response = _error_response(
+                "The learning agent could not complete this request. Please try again.",
+                500,
+            )
+            response.headers["X-LLM-Calls-Used"] = str(state.llm_calls)
+            response.headers["X-LLM-Calls-Remaining"] = str(max(0, MAX_LLM_CALLS - state.llm_calls))
+            response.headers["X-Agent-Session-Id"] = session_id
+            if not reused_cookie:
+                response.set_cookie(
+                    "adaptive_session_id",
+                    session_id,
+                    max_age=60 * 60,
+                    httponly=True,
+                    samesite="lax",
+                    secure=get_settings().production,
+                    path="/",
+                )
+            return response
 
     response = JSONResponse(
         {
@@ -143,7 +166,8 @@ async def execute(request: Request) -> JSONResponse:
 async def reset_session(request: Request) -> JSONResponse:
     session_id, valid_cookie = _session_id(request.cookies.get("adaptive_session_id"))
     if valid_cookie:
-        session_store.delete(session_id)
+        async with session_store.execution(session_id):
+            session_store.delete(session_id)
     response = JSONResponse({"status": "ok"})
     response.delete_cookie("adaptive_session_id", path="/")
     return response

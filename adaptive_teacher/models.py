@@ -48,6 +48,8 @@ class LearningState:
     strong_topics: list[str] = field(default_factory=list)
     history: list[ChatTurn] = field(default_factory=list)
     llm_calls: int = 0
+    latest_score: float | None = None
+    mastery: bool = False
     last_action: ToolName | None = None
     updated_at: float = 0.0
 

@@ -14,6 +14,8 @@ def _compact_state(state: LearningState) -> dict[str, object]:
         "topics": state.topics,
         "weak_topics": state.weak_topics,
         "strong_topics": state.strong_topics,
+        "latest_score": state.latest_score,
+        "mastery": state.mastery,
         "last_action": state.last_action,
         "llm_calls_used": state.llm_calls,
         "recent_history": [turn.as_dict() for turn in state.history[-8:]],

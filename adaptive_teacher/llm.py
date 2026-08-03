@@ -44,7 +44,11 @@ def _headers(api_key: str, custom_header: str | None) -> dict[str, str]:
 
 async def call_llm(messages: list[LlmMessage]) -> dict[str, Any]:
     settings = get_settings()
-    if settings.demo_mode or not settings.llmod_api_key:
+    if settings.demo_mode:
+        return _mock_llm(messages)
+    if not settings.llmod_api_key:
+        if settings.production:
+            raise RuntimeError("LLMOD_API_KEY is required in production.")
         return _mock_llm(messages)
 
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -59,8 +63,7 @@ async def call_llm(messages: list[LlmMessage]) -> dict[str, Any]:
             },
         )
     if not response.is_success:
-        detail = response.text[:300]
-        raise RuntimeError(f"LLMod request failed ({response.status_code}): {detail}")
+        raise RuntimeError(f"LLMod request failed with HTTP {response.status_code}.")
 
     payload = response.json()
     choices = payload.get("choices") if isinstance(payload, dict) else None
@@ -81,7 +84,11 @@ async def create_embeddings(input_value: str | list[str]) -> list[list[float]]:
         raise ValueError("Embedding input must contain at least one string.")
 
     settings = get_settings()
-    if settings.demo_mode or not settings.llmod_api_key:
+    if settings.demo_mode:
+        return [_mock_embedding(value) for value in values]
+    if not settings.llmod_api_key:
+        if settings.production:
+            raise RuntimeError("LLMOD_API_KEY is required in production.")
         return [_mock_embedding(value) for value in values]
 
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -91,8 +98,7 @@ async def create_embeddings(input_value: str | list[str]) -> list[list[float]]:
             json={"model": settings.llmod_embedding_model, "input": values},
         )
     if not response.is_success:
-        detail = response.text[:300]
-        raise RuntimeError(f"LLMod embeddings request failed ({response.status_code}): {detail}")
+        raise RuntimeError(f"LLMod embeddings request failed with HTTP {response.status_code}.")
 
     payload = response.json()
     data = payload.get("data") if isinstance(payload, dict) else None

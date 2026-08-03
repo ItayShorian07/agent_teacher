@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
 from adaptive_teacher.models import MAX_LLM_CALLS
 from adaptive_teacher.state import session_store
 
 
-def test_root_serves_framework_free_interface(client: TestClient) -> None:
+def test_root_serves_framework_free_interface(client) -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
@@ -21,7 +19,7 @@ def test_root_serves_framework_free_interface(client: TestClient) -> None:
     assert 'fetch("/api/execute"' in script.text
 
 
-def test_required_information_endpoints(client: TestClient) -> None:
+def test_required_information_endpoints(client) -> None:
     team = client.get("/api/team_info")
     assert team.status_code == 200
     assert set(team.json()) == {
@@ -46,9 +44,7 @@ def test_required_information_endpoints(client: TestClient) -> None:
     assert architecture.content.startswith(b"\x89PNG\r\n\x1a\n")
 
 
-def test_execute_has_exact_schema_trace_and_budget_headers(
-    client: TestClient,
-) -> None:
+def test_execute_has_exact_schema_trace_and_budget_headers(client) -> None:
     response = client.post(
         "/api/execute",
         json={"prompt": "אני אוהב כדורסל. חומר הלימוד: מים קופאים באפס מעלות."},
@@ -73,9 +69,7 @@ def test_execute_has_exact_schema_trace_and_budget_headers(
     assert client.cookies.get("adaptive_session_id")
 
 
-def test_session_is_continuous_and_reset_creates_a_new_id(
-    client: TestClient,
-) -> None:
+def test_session_is_continuous_and_reset_creates_a_new_id(client) -> None:
     first = client.post(
         "/api/execute",
         json={"prompt": "אני אוהב כדורסל. חומר: כדור הארץ מקיף את השמש."},
@@ -94,9 +88,7 @@ def test_session_is_continuous_and_reset_creates_a_new_id(
     assert third.headers["X-LLM-Calls-Used"] == "2"
 
 
-def test_hard_call_limit_never_invokes_another_model_call(
-    client: TestClient,
-) -> None:
+def test_hard_call_limit_never_invokes_another_model_call(client) -> None:
     first = client.post("/api/execute", json={"prompt": "חומר לימוד קצר"})
     session_id = first.headers["X-Agent-Session-Id"]
     state = session_store.get(session_id)
@@ -111,9 +103,7 @@ def test_hard_call_limit_never_invokes_another_model_call(
     assert limited.headers["X-LLM-Calls-Remaining"] == "0"
 
 
-def test_execute_validation_always_uses_required_error_schema(
-    client: TestClient,
-) -> None:
+def test_execute_validation_always_uses_required_error_schema(client) -> None:
     cases = [
         client.post(
             "/api/execute",

@@ -63,6 +63,7 @@ The objective is to build an autonomous teaching agent that:
 - Supabase schema and primary database connection.
 - Pinecone index and vector operations.
 - Text chunking, embedding upsert, semantic retrieval, and namespace deletion.
+- Durable project-wide usage limiting before public deployment.
 - Final team email and group batch/order values.
 - Vercel environment configuration and production deployment.
 
@@ -145,6 +146,7 @@ The current process-local state contains:
 - discovered interests;
 - identified topics;
 - weak and strong topics;
+- the latest evaluation score and mastery decision;
 - up to 20 recent student and teacher messages;
 - the most recent action;
 - total LLM calls used; and
@@ -190,7 +192,7 @@ The project uses the course LLMod gateway at `https://api.llmod.ai`.
 - Verified dimension: 1,536
 - Planned Pinecone metric: cosine similarity
 
-`adaptive_teacher/llm.py` uses the asynchronous `httpx` client. The API key is read only by server-side Python and is never returned to the browser. If no key is configured, deterministic demo responses keep the interface and API testable without spending the course budget.
+`adaptive_teacher/llm.py` uses the asynchronous `httpx` client. The API key is read only by server-side Python and is never returned to the browser. During local development, a missing key activates deterministic demo responses so the interface remains testable without spending the course budget. Production fails closed if the key is missing unless demo mode was explicitly enabled.
 
 # API contract
 
@@ -264,7 +266,7 @@ Run the automated suite:
 python -m pytest
 ```
 
-The tests set `ADAPTIVE_TEACHER_DEMO_MODE=true` before importing the application. Therefore, they validate the interface, endpoints, session continuity, traces, input errors, and call limit without making billable LLMod requests.
+The tests set `ADAPTIVE_TEACHER_DEMO_MODE=true` before importing the application. Therefore, they validate the interface, endpoints, session continuity, traces, input errors, concurrent call limiting, mastery persistence, and failure handling without making billable LLMod requests. A mocked HTTP transport also verifies the real LLMod URL, authorization header, payload, and structured-response parser without accessing the network.
 
 # Planned Supabase and Pinecone design
 
@@ -312,6 +314,7 @@ Vercel's Python runtime uses a read-only function filesystem except for ephemera
 - Never place a secret in `public/` or browser JavaScript.
 - Limit context to relevant state and retrieved source chunks.
 - Avoid unnecessary model calls to protect the course budget.
+- Add a durable global quota or rate limiter before public deployment; the 16-call session cap alone does not prevent users from creating additional sessions.
 - Treat traces as potentially sensitive because they contain full prompts and model responses.
 - Validate external-service errors and return the required human-readable API error shape.
 - Delete temporary vector namespaces when a session ends or expires.
@@ -322,6 +325,7 @@ Vercel's Python runtime uses a read-only function filesystem except for ephemera
 - Create and connect the Supabase project and schema.
 - Create a Pinecone index with 1,536 dimensions and cosine similarity.
 - Implement chunking, upsert, query, retry, and namespace deletion.
+- Implement durable project-wide LLMod usage limiting or rate limiting.
 - Add the new Supabase and Pinecone variable names to `.env.example`.
 - Add all production secrets to Vercel Project Settings.
 - Deploy to Vercel and verify the GUI and required endpoints in production.
