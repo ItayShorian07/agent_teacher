@@ -22,3 +22,7 @@ htmlcov/
 .vscode/
 *.pem
 node_modules
+
+
+# data
+data/*
