@@ -12,7 +12,6 @@ import httpx
 
 from .config import get_settings
 
-
 LlmMessage = dict[str, str]
 
 
@@ -51,9 +50,7 @@ async def call_llm(messages: list[LlmMessage]) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
             settings.chat_completions_url,
-            headers=_headers(
-                settings.llmod_api_key, settings.llmod_api_key_header
-            ),
+            headers=_headers(settings.llmod_api_key, settings.llmod_api_key_header),
             json={
                 "model": settings.llmod_model,
                 "messages": messages,
@@ -63,9 +60,7 @@ async def call_llm(messages: list[LlmMessage]) -> dict[str, Any]:
         )
     if not response.is_success:
         detail = response.text[:300]
-        raise RuntimeError(
-            f"LLMod request failed ({response.status_code}): {detail}"
-        )
+        raise RuntimeError(f"LLMod request failed ({response.status_code}): {detail}")
 
     payload = response.json()
     choices = payload.get("choices") if isinstance(payload, dict) else None
@@ -74,11 +69,7 @@ async def call_llm(messages: list[LlmMessage]) -> dict[str, Any]:
         message = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
         content = message.get("content") if isinstance(message, dict) else None
     if isinstance(content, list):
-        content = "".join(
-            str(part.get("text", ""))
-            for part in content
-            if isinstance(part, dict)
-        )
+        content = "".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
     if not isinstance(content, str) or not content.strip():
         raise RuntimeError("LLMod returned an empty response.")
     return _extract_json(content)
@@ -96,16 +87,12 @@ async def create_embeddings(input_value: str | list[str]) -> list[list[float]]:
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
             settings.embeddings_url,
-            headers=_headers(
-                settings.llmod_api_key, settings.llmod_api_key_header
-            ),
+            headers=_headers(settings.llmod_api_key, settings.llmod_api_key_header),
             json={"model": settings.llmod_embedding_model, "input": values},
         )
     if not response.is_success:
         detail = response.text[:300]
-        raise RuntimeError(
-            f"LLMod embeddings request failed ({response.status_code}): {detail}"
-        )
+        raise RuntimeError(f"LLMod embeddings request failed ({response.status_code}): {detail}")
 
     payload = response.json()
     data = payload.get("data") if isinstance(payload, dict) else None
@@ -127,9 +114,7 @@ def _mock_embedding(value: str) -> list[float]:
     vector = [0.0] * 1_536
     digest = hashlib.sha256(value.encode("utf-8")).digest()
     for index, byte in enumerate(value.encode("utf-8")):
-        vector[(index * 31 + digest[index % len(digest)]) % len(vector)] += (
-            byte % 97
-        ) / 97
+        vector[(index * 31 + digest[index % len(digest)]) % len(vector)] += (byte % 97) / 97
     magnitude = math.sqrt(sum(item * item for item in vector)) or 1.0
     return [item / magnitude for item in vector]
 

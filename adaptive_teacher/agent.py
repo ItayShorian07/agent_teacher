@@ -42,41 +42,31 @@ def _validate_decision(raw: dict[str, Any]) -> SupervisorDecision:
         action=cast(ToolName, action),
         reason=raw.get("reason") if isinstance(raw.get("reason"), str) else "",
         tool_instruction=(
-            raw.get("tool_instruction")
-            if isinstance(raw.get("tool_instruction"), str)
-            else ""
+            raw.get("tool_instruction") if isinstance(raw.get("tool_instruction"), str) else ""
         ),
         direct_response=(
-            raw.get("direct_response")
-            if isinstance(raw.get("direct_response"), str)
-            else ""
+            raw.get("direct_response") if isinstance(raw.get("direct_response"), str) else ""
         ),
     )
 
 
-def _update_state(
-    state: LearningState, action: ToolName, result: dict[str, Any]
-) -> None:
+def _update_state(state: LearningState, action: ToolName, result: dict[str, Any]) -> None:
     material = result.get("material")
     if isinstance(material, str) and material.strip():
         state.material = material.strip()[:30_000]
     state.interests = _unique(state.interests + _string_array(result.get("interests")))
     state.topics = _unique(state.topics + _string_array(result.get("topics")))
-    state.weak_topics = _unique(
-        state.weak_topics + _string_array(result.get("weak_topics"))
-    )
-    state.strong_topics = _unique(
-        state.strong_topics + _string_array(result.get("strong_topics"))
-    )
+    state.weak_topics = _unique(state.weak_topics + _string_array(result.get("weak_topics")))
+    state.strong_topics = _unique(state.strong_topics + _string_array(result.get("strong_topics")))
     state.last_action = action
 
 
-async def execute_agent(
-    state: LearningState, message: str
-) -> tuple[str, list[dict[str, Any]]]:
+async def execute_agent(state: LearningState, message: str) -> tuple[str, list[dict[str, Any]]]:
     steps: list[TraceStep] = []
     if state.llm_calls >= MAX_LLM_CALLS:
-        response = "הגענו למגבלה של 16 קריאות למודל בשיחה הזו. אפשר להתחיל session חדש כדי להמשיך ללמוד."
+        response = (
+            "הגענו למגבלה של 16 קריאות למודל בשיחה הזו. אפשר להתחיל session חדש כדי להמשיך ללמוד."
+        )
         state.history.extend(
             [
                 ChatTurn(role="student", content=message),
@@ -111,7 +101,9 @@ async def execute_agent(
     response = decision.direct_response
     if decision.action not in {"RespondDirectly", "Stop"}:
         if state.llm_calls >= MAX_LLM_CALLS:
-            response = "הגעתי למגבלת הקריאות לפני הפעלת הכלי הבא. פתח session חדש כדי להמשיך עם תקציב מלא."
+            response = (
+                "הגעתי למגבלת הקריאות לפני הפעלת הכלי הבא. פתח session חדש כדי להמשיך עם תקציב מלא."
+            )
             state.last_action = "Stop"
         else:
             tool_system, tool_user = tool_prompt(
@@ -143,9 +135,7 @@ async def execute_agent(
         state.last_action = decision.action
         if not response:
             response = (
-                "סיימנו את תהליך הלמידה להיום."
-                if decision.action == "Stop"
-                else "אני מוכן להמשיך."
+                "סיימנו את תהליך הלמידה להיום." if decision.action == "Stop" else "אני מוכן להמשיך."
             )
 
     state.history.append(ChatTurn(role="teacher", content=response))

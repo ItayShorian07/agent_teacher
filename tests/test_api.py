@@ -51,9 +51,7 @@ def test_execute_has_exact_schema_trace_and_budget_headers(
 ) -> None:
     response = client.post(
         "/api/execute",
-        json={
-            "prompt": "אני אוהב כדורסל. חומר הלימוד: מים קופאים באפס מעלות."
-        },
+        json={"prompt": "אני אוהב כדורסל. חומר הלימוד: מים קופאים באפס מעלות."},
     )
     assert response.status_code == 200
     payload = response.json()

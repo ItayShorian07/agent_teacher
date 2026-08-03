@@ -6,7 +6,6 @@ import os
 
 import pytest
 
-
 # This is set before importing the application, so .env.local can never cause a
 # live LLMod request during automated tests.
 os.environ["ADAPTIVE_TEACHER_DEMO_MODE"] = "true"

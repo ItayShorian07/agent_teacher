@@ -15,7 +15,6 @@ from adaptive_teacher.config import get_settings
 from adaptive_teacher.models import MAX_LLM_CALLS
 from adaptive_teacher.state import session_store
 
-
 ROOT = Path(__file__).resolve().parent
 PUBLIC = ROOT / "public"
 
@@ -104,15 +103,11 @@ async def execute(request: Request) -> JSONResponse:
 
     prompt = body.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
-        return _error_response(
-            "The request must include a non-empty string field named 'prompt'."
-        )
+        return _error_response("The request must include a non-empty string field named 'prompt'.")
     if len(prompt) > 30_000:
         return _error_response("The prompt is limited to 30,000 characters.")
 
-    session_id, reused_cookie = _session_id(
-        request.cookies.get("adaptive_session_id")
-    )
+    session_id, reused_cookie = _session_id(request.cookies.get("adaptive_session_id"))
     state = session_store.get(session_id)
     try:
         response_text, steps = await execute_agent(state, prompt.strip())
@@ -129,9 +124,7 @@ async def execute(request: Request) -> JSONResponse:
         }
     )
     response.headers["X-LLM-Calls-Used"] = str(state.llm_calls)
-    response.headers["X-LLM-Calls-Remaining"] = str(
-        max(0, MAX_LLM_CALLS - state.llm_calls)
-    )
+    response.headers["X-LLM-Calls-Remaining"] = str(max(0, MAX_LLM_CALLS - state.llm_calls))
     response.headers["X-Agent-Session-Id"] = session_id
     if not reused_cookie:
         response.set_cookie(
@@ -148,9 +141,7 @@ async def execute(request: Request) -> JSONResponse:
 
 @app.delete("/api/session")
 async def reset_session(request: Request) -> JSONResponse:
-    session_id, valid_cookie = _session_id(
-        request.cookies.get("adaptive_session_id")
-    )
+    session_id, valid_cookie = _session_id(request.cookies.get("adaptive_session_id"))
     if valid_cookie:
         session_store.delete(session_id)
     response = JSONResponse({"status": "ok"})

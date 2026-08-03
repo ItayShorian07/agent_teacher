@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-
 MAX_LLM_CALLS = 16
 TOOL_NAMES = (
     "AskInterests",

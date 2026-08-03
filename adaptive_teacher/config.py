@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from functools import lru_cache
-import os
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 from dotenv import load_dotenv
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -65,12 +64,8 @@ def get_settings() -> Settings:
     environment = os.getenv("VERCEL_ENV") or os.getenv("APP_ENV") or "development"
     return Settings(
         llmod_api_key=os.getenv("LLMOD_API_KEY", "").strip(),
-        llmod_base_url=_normalized_base_url(
-            os.getenv("LLMOD_BASE_URL", "https://api.llmod.ai")
-        ),
-        llmod_model=os.getenv(
-            "LLMOD_MODEL", "MB5R2CF-azure/gpt-5.4-mini"
-        ).strip(),
+        llmod_base_url=_normalized_base_url(os.getenv("LLMOD_BASE_URL", "https://api.llmod.ai")),
+        llmod_model=os.getenv("LLMOD_MODEL", "MB5R2CF-azure/gpt-5.4-mini").strip(),
         llmod_embedding_model=os.getenv(
             "LLMOD_EMBEDDING_MODEL",
             "MB5R2CF-azure/text-embedding-3-small",
@@ -78,9 +73,7 @@ def get_settings() -> Settings:
         llmod_chat_completions_url=os.getenv("LLMOD_CHAT_COMPLETIONS_URL") or None,
         llmod_embeddings_url=os.getenv("LLMOD_EMBEDDINGS_URL") or None,
         llmod_api_key_header=os.getenv("LLMOD_API_KEY_HEADER") or None,
-        group_batch_order_number=os.getenv(
-            "GROUP_BATCH_ORDER_NUMBER", "TBD_TBD"
-        ).strip(),
+        group_batch_order_number=os.getenv("GROUP_BATCH_ORDER_NUMBER", "TBD_TBD").strip(),
         team_name=os.getenv("TEAM_NAME", "Adaptive AI Teacher").strip(),
         batel_email=os.getenv("BATEL_EMAIL", "").strip(),
         itay_email=os.getenv("ITAY_EMAIL", "").strip(),

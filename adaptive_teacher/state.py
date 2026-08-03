@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from threading import RLock
 import time
+from threading import RLock
 
 from .models import LearningState
-
 
 SESSION_TTL_SECONDS = 60 * 60
 

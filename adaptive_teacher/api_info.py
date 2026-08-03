@@ -6,7 +6,6 @@ from typing import Any
 
 from .config import get_settings
 
-
 EXAMPLE_PROMPT = (
     "אני אוהב כדורסל. הנה חומר הלימוד: פוטוסינתזה היא התהליך שבו "
     "צמחים משתמשים באור כדי להמיר מים ופחמן דו-חמצני לגלוקוז וחמצן."
