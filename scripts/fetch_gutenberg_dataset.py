@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import urllib.request
@@ -16,10 +17,15 @@ BOOKS_CATALOG = [
     {"id": 9, "gutenberg_id": 215, "title": "The Call of the Wild"},
     {"id": 10, "gutenberg_id": 46, "title": "A Christmas Carol"},
     {"id": 11, "gutenberg_id": 236, "title": "The Jungle Book"},
-    {"id": 12, "gutenberg_id": 164, "title": "Twenty Thousand Leagues Under the Sea"},
-    {"id": 13, "gutenberg_id": 84, "title": "Frankenstein"},
-    {"id": 14, "gutenberg_id": 1342, "title": "Pride and Prejudice"},
-    {"id": 15, "gutenberg_id": 73, "title": "The Red Badge of Courage"},
+    {"id": 12, "gutenberg_id": 45, "title": "Anne of Green Gables"},
+    {"id": 13, "gutenberg_id": 164, "title": "Twenty Thousand Leagues Under the Sea"},
+    {"id": 14, "gutenberg_id": 84, "title": "Frankenstein"},
+    {"id": 15, "gutenberg_id": 1342, "title": "Pride and Prejudice"},
+    {"id": 16, "gutenberg_id": 1661, "title": "The Adventures of Sherlock Holmes"},
+    {"id": 17, "gutenberg_id": 98, "title": "A Tale of Two Cities"},
+    {"id": 18, "gutenberg_id": 73, "title": "The Red Badge of Courage"},
+    {"id": 19, "gutenberg_id": 2701, "title": "Moby Dick"},
+    {"id": 20, "gutenberg_id": 844, "title": "The Importance of Being Earnest"},
 ]
 
 def slugify(text: str) -> str:
