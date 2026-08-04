@@ -4,6 +4,13 @@ import json
 import urllib.request
 import urllib.error
 from pathlib import Path
+from dotenv import load_dotenv
+
+BASE_PROJECT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_PROJECT_DIR / ".env")
+load_dotenv(BASE_PROJECT_DIR / ".env.local")
+
+GUTENDEX_API_URL = os.getenv("GUTENDEX_API_URL", "https://gutendex.com/books").rstrip('/')
 
 BOOKS_CATALOG = [
     {"id": 1, "gutenberg_id": 2591, "title": "Grimms' Fairy Tales"},
@@ -45,7 +52,7 @@ def strip_gutenberg_headers(text: str) -> str:
     return text.strip()
 
 def fetch_book_api_data(gid: int) -> dict:
-    api_url = f"https://gutendex.com/books/{gid}"
+    api_url = f"{GUTENDEX_API_URL}/{gid}"
     req = urllib.request.Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         with urllib.request.urlopen(req) as resp:
@@ -93,19 +100,19 @@ def main():
 
             rel_path = str(file_path.relative_to(Path(__file__).resolve().parent.parent)).replace("\\", "/")
 
-            authors = [a.get("name") for a in api_data.get("authors", []) if "name" in a]
-            author_str = ", ".join(authors) if authors else ""
+            author_names = [a.get("name") for a in api_data.get("authors", []) if isinstance(a, dict) and "name" in a]
+            author_str = ", ".join(author_names) if author_names else ""
 
             meta_entry = {
                 **item,
                 "author": author_str,
-                "authors": api_data.get("authors", []),
-                "subjects": api_data.get("subjects", []),
-                "bookshelves": api_data.get("bookshelves", []),
-                "languages": api_data.get("languages", []),
-                "copyright": api_data.get("copyright"),
-                "media_type": api_data.get("media_type"),
-                "download_count": api_data.get("download_count"),
+                "authors": author_names,
+                "subjects": api_data.get("subjects", []) or [],
+                "bookshelves": api_data.get("bookshelves", []) or [],
+                "languages": api_data.get("languages", []) or [],
+                "copyright": bool(api_data.get("copyright")),
+                "media_type": api_data.get("media_type") or "",
+                "download_count": api_data.get("download_count") or 0,
                 "filename": filename,
                 "file_path": rel_path,
                 "char_count": len(clean_text),
